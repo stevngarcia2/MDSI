@@ -1,45 +1,25 @@
-# ============================================================
-#  .gitignore — Archivos que NO se suben a GitHub
-#
-#  CRÍTICO: el .env NUNCA debe subirse al repositorio
-#  porque contiene claves de API que son secretas.
-# ============================================================
+﻿.env
+.env.*
+!.env.example
 
-# Variables de entorno — NUNCA subir al repositorio
-.env
-.env.local
-.env.production
-
-# Entornos virtuales Python
-venv/
-env/
-.venv/
-
-# Caché de Python
 __pycache__/
 *.py[cod]
 *.pyo
-*.pyd
-.Python
 
-# Distribución y empaquetado
-dist/
-build/
-*.egg-info/
+.venv/
+venv/
+env/
 
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Sistema operativo
+*.log
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-logs/
-
-# Railway
-.railway/
+_backup_railway/
+index_backup.html
+index_anterior.html
+prueba_fastapi.py
+prueba_journali.py

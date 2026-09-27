@@ -1,26 +1,61 @@
 """
-core/structured.py — Esquemas Pydantic para Salida Estructurada
-Seminario: Agentes de IA · Sesión 6 (Despliegue)
+core/structured.py — Esquemas Pydantic para JOURNALI
 
-Mismo concepto de la Sesión 2 (Structured Output): en vez de dejar
-que el modelo redacte libremente, le damos un "formulario" con
-casillas fijas que tiene que llenar siempre igual.
+Modelos de salida estructurada para apoyar procesos de
+investigación científica y análisis de literatura.
 """
 
 from typing import List
 from pydantic import BaseModel, Field
 
 
-class Alerta(BaseModel):
-    """Una alerta o riesgo detectado para el reporte ejecutivo."""
-    area: str = Field(description="Área afectada: Ventas, RRHH, Operaciones, Finanzas, etc.")
-    descripcion: str = Field(description="Descripción concreta del riesgo o alerta")
-    accion_recomendada: str = Field(description="Acción concreta recomendada")
+class Hallazgo(BaseModel):
+    """Hallazgo identificado durante el análisis documental."""
+
+    descripcion: str = Field(
+        description="Descripción clara del hallazgo identificado."
+    )
+
+    evidencia: str = Field(
+        description="Evidencia documental que sustenta el hallazgo."
+    )
+
+    fuente: str = Field(
+        description="Documento o fuente de la que se obtiene la evidencia."
+    )
 
 
-class ReporteEjecutivo(BaseModel):
-    """Reporte ejecutivo estructurado para TechnoDistrib S.A.S."""
-    resumen_ejecutivo: str = Field(description="Resumen del reporte en 2-3 oraciones")
-    alertas: List[Alerta] = Field(default_factory=list, description="Alertas o riesgos detectados")
-    oportunidades: List[str] = Field(default_factory=list, description="Oportunidades identificadas")
-    recomendaciones: List[str] = Field(default_factory=list, description="Recomendaciones priorizadas")
+class ReporteInvestigacion(BaseModel):
+    """Reporte estructurado para apoyar procesos de investigación científica."""
+
+    tema: str = Field(
+        description="Tema principal de la investigación."
+    )
+
+    contexto: str = Field(
+        description="Contexto general del tema analizado."
+    )
+
+    conceptos_principales: List[str] = Field(
+        description="Conceptos fundamentales identificados en la literatura."
+    )
+
+    hallazgos: List[Hallazgo] = Field(
+        description="Principales hallazgos derivados del análisis documental."
+    )
+
+    tendencias: List[str] = Field(
+        description="Tendencias identificadas en la literatura o documentación."
+    )
+
+    vacios_investigacion: List[str] = Field(
+        description="Vacíos, limitaciones o problemas identificados."
+    )
+
+    lineas_investigacion: List[str] = Field(
+        description="Posibles líneas o oportunidades de investigación."
+    )
+
+    conclusion: str = Field(
+        description="Conclusión general del análisis realizado."
+    )

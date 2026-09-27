@@ -1,117 +1,244 @@
 """
-============================================================
-  models/schemas.py — Modelos Pydantic de entrada y salida
-  Seminario: Agentes de IA · Sesión 5
+models/schemas.py — Modelos Pydantic de JOURNALI
 
-  Define los tipos de datos que la API acepta y devuelve.
-  FastAPI usa estos modelos para:
-    - Validar automáticamente los datos entrantes
-    - Generar documentación Swagger automática
-    - Serializar las respuestas a JSON
+Define los modelos de entrada y salida utilizados por la API
+de JOURNALI.
 
-  ✏️ MODIFICA AQUÍ: agrega o quita campos según tu caso de uso.
-============================================================
+Estos modelos permiten:
+
+- Validar las solicitudes recibidas por FastAPI.
+- Estructurar las respuestas del agente.
+- Generar automáticamente la documentación OpenAPI/Swagger.
+- Transportar categorías y fuentes documentales recuperadas
+  mediante RAG.
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
-# ─────────────────────────────────────────────────────────
-#  MODELOS DE ENTRADA (Request)
-#  Lo que el cliente envía al servidor
-# ─────────────────────────────────────────────────────────
+# ============================================================
+# MODELOS DE ENTRADA
+# ============================================================
 
 class ChatRequest(BaseModel):
-    """Cuerpo del POST /chat"""
-    # ✏️ MODIFICA AQUÍ: agrega campos si necesitas más contexto
-    mensaje:    str  = Field(..., description="Mensaje del usuario", min_length=1, max_length=2000)
-    session_id: str  = Field(default="default", description="ID de sesión para memoria")
+    """Solicitud de conversación con JOURNALI."""
+
+    mensaje: str = Field(
+        ...,
+        description="Consulta o mensaje del usuario.",
+        min_length=1,
+        max_length=4000,
+    )
+
+    session_id: str = Field(
+        default="default",
+        description="Identificador de la sesión conversacional.",
+        min_length=1,
+        max_length=100,
+    )
 
     class Config:
         json_schema_extra = {
             "example": {
-                "mensaje":    "¿Qué temperatura hace en Bogotá?",
-                "session_id": "usuario_001"
+                "mensaje": (
+                    "¿Cuáles son las principales tendencias "
+                    "de investigación en agricultura de precisión?"
+                ),
+                "session_id": "investigacion_001",
             }
         }
 
 
 class AgentRequest(BaseModel):
-    """Cuerpo del POST /agent — para tareas específicas"""
-    # ✏️ MODIFICA AQUÍ: define los campos de tu tarea
-    tarea:      str  = Field(..., description="Tarea a ejecutar por el agente")
-    contexto:   Optional[str] = Field(default=None, description="Contexto adicional opcional")
-    session_id: str  = Field(default="default", description="ID de sesión")
+    """Solicitud para ejecutar una tarea específica de investigación."""
+
+    tarea: str = Field(
+        ...,
+        description="Tarea de investigación que debe ejecutar JOURNALI.",
+        min_length=1,
+        max_length=5000,
+    )
+
+    contexto: Optional[str] = Field(
+        default=None,
+        description=(
+            "Contexto adicional para orientar el análisis, "
+            "como disciplina, problema, población o alcance."
+        ),
+        max_length=10000,
+    )
+
+    session_id: str = Field(
+        default="default",
+        description="Identificador de la sesión.",
+        min_length=1,
+        max_length=100,
+    )
 
     class Config:
         json_schema_extra = {
             "example": {
-                "tarea":    "Analiza las ventajas de los implantes dentales vs prótesis removibles",
-                "contexto": "Paciente de 55 años con buena salud ósea",
-                "session_id": "caso_clinico_001"
+                "tarea": (
+                    "Analiza la literatura disponible e identifica "
+                    "las principales líneas de investigación sobre "
+                    "digitalización sostenible de procesos logísticos."
+                ),
+                "contexto": (
+                    "Interés en tendencias tecnológicas, "
+                    "metodologías de investigación y vacíos "
+                    "identificados en la literatura."
+                ),
+                "session_id": "investigacion_001",
             }
         }
 
 
-# ─────────────────────────────────────────────────────────
-#  MODELOS DE SALIDA (Response)
-#  Lo que el servidor devuelve al cliente
-# ─────────────────────────────────────────────────────────
+# ============================================================
+# MODELOS DE SALIDA
+# ============================================================
 
 class ChatResponse(BaseModel):
-    """Respuesta del POST /chat"""
-    # ✏️ MODIFICA AQUÍ: agrega campos de respuesta si necesitas
-    respuesta:  str            = Field(..., description="Respuesta del agente")
-    session_id: str            = Field(..., description="ID de sesión usado")
-    timestamp:  datetime       = Field(default_factory=datetime.now)
-    modelo:     str            = Field(..., description="Modelo LLM usado")
-    categoria:  Optional[str]  = Field(default=None, description="Camino que tomó el coordinador: conversacion | documentos | analisis | reporte")
-    fuentes:    List[str]      = Field(default_factory=list, description="Fuentes citadas cuando la respuesta usó RAG")
+    """Respuesta generada por JOURNALI mediante /chat."""
+
+    respuesta: str = Field(
+        ...,
+        description="Respuesta generada por JOURNALI.",
+    )
+
+    session_id: str = Field(
+        ...,
+        description="Identificador de la sesión utilizada.",
+    )
+
+    timestamp: datetime = Field(
+        default_factory=datetime.now,
+        description="Fecha y hora de generación de la respuesta.",
+    )
+
+    modelo: str = Field(
+        ...,
+        description="Modelo LLM utilizado.",
+    )
+
+    categoria: Optional[str] = Field(
+        default=None,
+        description=(
+            "Ruta determinada por el coordinador: "
+            "conversacion, documentos, analisis o reporte."
+        ),
+    )
+
+    fuentes: List[str] = Field(
+        default_factory=list,
+        description=(
+            "Fuentes documentales recuperadas mediante el sistema RAG."
+        ),
+    )
 
     class Config:
         json_schema_extra = {
             "example": {
-                "respuesta":  "En Bogotá actualmente hay 16°C con cielo parcialmente nublado.",
-                "session_id": "usuario_001",
-                "timestamp":  "2025-01-15T10:30:00",
-                "modelo":     "openai/gpt-oss-120b",
-                "categoria":  "conversacion",
-                "fuentes":    []
+                "respuesta": (
+                    "La literatura consultada muestra tendencias "
+                    "relacionadas con sensores IoT, análisis de datos, "
+                    "teledetección y automatización de procesos agrícolas."
+                ),
+                "session_id": "investigacion_001",
+                "timestamp": "2026-09-25T10:30:00",
+                "modelo": "openai/gpt-oss-120b",
+                "categoria": "analisis",
+                "fuentes": [
+                    "documento_agricultura_precision.pdf"
+                ],
             }
         }
 
 
 class AgentResponse(BaseModel):
-    """Respuesta del POST /agent"""
-    resultado:  str            = Field(..., description="Resultado de la tarea")
-    tarea:      str            = Field(..., description="Tarea ejecutada")
-    session_id: str            = Field(..., description="ID de sesión")
-    timestamp:  datetime       = Field(default_factory=datetime.now)
-    categoria:  Optional[str]  = Field(default=None, description="Camino que tomó el coordinador")
-    fuentes:    List[str]      = Field(default_factory=list, description="Fuentes citadas cuando aplique")
+    """Respuesta generada por JOURNALI mediante /agent."""
+
+    resultado: str = Field(
+        ...,
+        description="Resultado de la tarea de investigación.",
+    )
+
+    tarea: str = Field(
+        ...,
+        description="Tarea solicitada al agente.",
+    )
+
+    session_id: str = Field(
+        ...,
+        description="Identificador de la sesión.",
+    )
+
+    timestamp: datetime = Field(
+        default_factory=datetime.now,
+        description="Fecha y hora de generación del resultado.",
+    )
+
+    categoria: Optional[str] = Field(
+        default=None,
+        description=(
+            "Ruta determinada por el coordinador: "
+            "conversacion, documentos, analisis o reporte."
+        ),
+    )
+
+    fuentes: List[str] = Field(
+        default_factory=list,
+        description=(
+            "Fuentes documentales recuperadas mediante RAG."
+        ),
+    )
 
 
 class HealthResponse(BaseModel):
-    """Respuesta del GET /health"""
-    status:   str = Field(..., description="Estado del servicio")
-    agente:   str = Field(..., description="Nombre del agente")
-    proveedor:str = Field(..., description="Proveedor LLM activo")
-    version:  str = Field(default="1.0.0")
+    """Estado básico del servicio JOURNALI."""
+
+    status: str = Field(
+        ...,
+        description="Estado operativo del servicio.",
+    )
+
+    agente: str = Field(
+        ...,
+        description="Nombre del agente.",
+    )
+
+    proveedor: str = Field(
+        ...,
+        description="Proveedor del modelo de lenguaje.",
+    )
+
+    version: str = Field(
+        default="1.0.0",
+        description="Versión de la API.",
+    )
 
     class Config:
         json_schema_extra = {
             "example": {
-                "status":    "ok",
-                "agente":    "MiAgente",
+                "status": "ok",
+                "agente": "JOURNALI",
                 "proveedor": "groq",
-                "version":   "1.0.0"
+                "version": "1.0.0",
             }
         }
 
 
 class ErrorResponse(BaseModel):
-    """Respuesta de error estándar"""
-    error:   str = Field(..., description="Descripción del error")
-    detalle: Optional[str] = Field(default=None, description="Detalle técnico")
+    """Respuesta estándar de error de la API."""
+
+    error: str = Field(
+        ...,
+        description="Descripción del error.",
+    )
+
+    detalle: Optional[str] = Field(
+        default=None,
+        description="Detalle técnico del error.",
+    )

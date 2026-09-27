@@ -1,136 +1,216 @@
 """
-============================================================
-  main.py — Servidor FastAPI principal
-  Seminario: Agentes de IA · Sesión 6 (Despliegue)
+main.py — Servidor principal de JOURNALI
 
-  Punto de entrada de la aplicación.
-  Registra todos los routers, sirve el frontend de chat
-  (frontend/index.html) y configura la API.
+JOURNALI es un agente inteligente de apoyo a la investigación
+científica y la publicación académica.
 
-  Un solo despliegue en Railway sirve las dos cosas:
-    - La interfaz de chat en  /
-    - La API REST en          /chat, /agent, /health...
-    - La documentación en     /docs
+La aplicación expone:
 
-  Arrancar el servidor:
-      uvicorn main:app --reload --port 8000
-
-  Ver documentación Swagger:
-      http://localhost:8000/docs
-
-  ✏️ MODIFICA AQUÍ: título, descripción y versión de la API
-============================================================
+- Interfaz web en /
+- Chat conversacional en /chat
+- Ejecución de tareas del agente en /agent
+- Estado del sistema en /health
+- Estado detallado en /health/detail
+- Información de la API en /api
+- Documentación interactiva en /docs
 """
 
 import os
 from pathlib import Path
+
 from dotenv import load_dotenv
+
+# ============================================================
+# CONFIGURACIÓN DEL ENTORNO
+# ============================================================
+
+# Cargar variables antes de importar los módulos de la aplicación.
+load_dotenv()
+
+
+# ============================================================
+# FASTAPI
+# ============================================================
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from routes.chat   import router as chat_router
-from routes.agent  import router as agent_router
+from routes.chat import router as chat_router
+from routes.agent import router as agent_router
 from routes.health import router as health_router
 
-load_dotenv()
 
-# ═══════════════════════════════════════════════════════════
-#  ✏️ MODIFICA AQUÍ — Metadata de tu API
-#  Esto aparece en la documentación Swagger
-# ═══════════════════════════════════════════════════════════
-NOMBRE_AGENTE = os.getenv("AGENT_NAME", "Asistente")
+# ============================================================
+# IDENTIDAD DE JOURNALI
+# ============================================================
+
+NOMBRE_AGENTE = os.getenv("AGENT_NAME", "JOURNALI")
+
+ROL_AGENTE = os.getenv(
+    "AGENT_ROLE",
+    "agente inteligente de apoyo a la investigación científica",
+)
+
+DOMINIO_AGENTE = os.getenv(
+    "AGENT_DOMAIN",
+    "investigación científica y publicación académica",
+)
+
+PROPOSITO_AGENTE = os.getenv(
+    "SYSTEM_PURPOSE",
+    (
+        "apoyar procesos de investigación científica mediante "
+        "consulta documental, análisis de literatura, identificación "
+        "de tendencias, síntesis de información y elaboración de "
+        "reportes de investigación"
+    ),
+)
+
+
+# ============================================================
+# APLICACIÓN
+# ============================================================
 
 app = FastAPI(
-    title=f"API — {NOMBRE_AGENTE}",
+    title=f"{NOMBRE_AGENTE} — Agente de Investigación Científica",
     description=f"""
-## Agente Inteligente: {NOMBRE_AGENTE}
+# {NOMBRE_AGENTE}
 
-API REST para interactuar con el agente de IA construido durante el seminario.
+Agente inteligente de apoyo a la investigación científica y la
+publicación académica.
 
-### Endpoints disponibles:
-- **POST /chat** — Conversar con el agente (con memoria por sesión)
-- **POST /agent** — Ejecutar tareas específicas con contexto
-- **GET /health** — Verificar estado del servicio
-- **GET /health/detail** — Estado detallado con herramientas
+**Rol:** {ROL_AGENTE}
 
-### Documentación:
-- Swagger UI: `/docs`
-- ReDoc: `/redoc`
-    """,
+**Dominio:** {DOMINIO_AGENTE}
+
+**Propósito:** {PROPOSITO_AGENTE}
+
+## Capacidades principales
+
+- Consulta de documentos científicos y académicos.
+- Recuperación de información mediante RAG.
+- Análisis de literatura científica.
+- Identificación de tendencias.
+- Síntesis de información.
+- Identificación de hallazgos y vacíos de investigación.
+- Propuesta de líneas de investigación.
+- Elaboración de reportes estructurados.
+- Memoria conversacional por sesión.
+
+## Endpoints principales
+
+- **POST /chat** — Conversación con JOURNALI.
+- **POST /agent** — Ejecución de tareas de investigación.
+- **GET /health** — Estado básico del servicio.
+- **GET /health/detail** — Estado detallado del agente.
+- **GET /api** — Información general de la API.
+- **GET /** — Interfaz web de JOURNALI.
+- **GET /docs** — Documentación interactiva.
+""",
     version="1.0.0",
-    # ✏️ MODIFICA AQUÍ: cambia los metadatos
     contact={
-        "name":  "Seminario Agentes IA",
-        "email": "tu@email.com",
-    },
-    license_info={
-        "name": "MIT",
+        "name": "JOURNALI",
     },
 )
 
-# ═══════════════════════════════════════════════════════════
-#  CORS — permite que frontends externos llamen a la API
-#  ✏️ MODIFICA AQUÍ: restringe los orígenes en producción
-# ═══════════════════════════════════════════════════════════
+
+# ============================================================
+# CORS
+# ============================================================
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],       # ✏️ en producción: ["https://tusitioweb.com"]
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# ═══════════════════════════════════════════════════════════
-#  ROUTERS — registra todos los endpoints
-# ═══════════════════════════════════════════════════════════
-app.include_router(health_router, tags=["Monitoreo"])
-app.include_router(chat_router,   tags=["Chat"])
-app.include_router(agent_router,  tags=["Agente"])
+# ============================================================
+# ROUTERS
+# ============================================================
+
+app.include_router(
+    health_router,
+    tags=["Monitoreo"],
+)
+
+app.include_router(
+    chat_router,
+    tags=["Chat"],
+)
+
+app.include_router(
+    agent_router,
+    tags=["Agente"],
+)
 
 
-# ═══════════════════════════════════════════════════════════
-#  FRONTEND — sirve la interfaz de chat en la ruta raíz
-#  El archivo vive en frontend/index.html; ver ese archivo
-#  para modificar la interfaz visual del chat.
-# ═══════════════════════════════════════════════════════════
+# ============================================================
+# FRONTEND
+# ============================================================
+
 FRONTEND_INDEX = Path(__file__).parent / "frontend" / "index.html"
 
 
-@app.get("/", tags=["Info"])
+@app.get("/", tags=["JOURNALI"])
 async def root():
-    """GET / — sirve la interfaz de chat (frontend/index.html)"""
-    return FileResponse(FRONTEND_INDEX, media_type="text/html; charset=utf-8")
+    """Sirve la interfaz web de JOURNALI."""
+    return FileResponse(
+        FRONTEND_INDEX,
+        media_type="text/html; charset=utf-8",
+    )
 
 
-@app.get("/api", tags=["Info"])
+# ============================================================
+# INFORMACIÓN DE LA API
+# ============================================================
+
+@app.get("/api", tags=["JOURNALI"])
 async def info():
-    """GET /api — información básica de la API, en JSON"""
+    """Devuelve información general de JOURNALI."""
     return {
-        "api":      f"Agente IA — {NOMBRE_AGENTE}",
-        "version":  "1.0.0",
-        "docs":     "/docs",
-        "health":   "/health",
+        "application": "JOURNALI",
+        "agent": NOMBRE_AGENTE,
+        "role": ROL_AGENTE,
+        "domain": DOMINIO_AGENTE,
+        "purpose": PROPOSITO_AGENTE,
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/health",
+        "chat": "/chat",
+        "agent_endpoint": "/agent",
     }
 
 
-# ═══════════════════════════════════════════════════════════
-#  ARRANQUE DIRECTO
-#  Ejecuta con:  python main.py
-#  O con:        uvicorn main:app --reload
-# ═══════════════════════════════════════════════════════════
+# ============================================================
+# ARRANQUE DIRECTO
+# ============================================================
+
 if __name__ == "__main__":
     import uvicorn
-    host  = os.getenv("API_HOST", "0.0.0.0")
-    port  = int(os.getenv("API_PORT", "8000"))
+
+    host = os.getenv("API_HOST", "0.0.0.0")
+    port = int(os.getenv("API_PORT", "8000"))
     debug = os.getenv("API_DEBUG", "True").lower() == "true"
 
-    print(f"\n{'─'*50}")
-    print(f"  🚀 Servidor arrancando...")
-    print(f"  Agente:  {NOMBRE_AGENTE}")
-    print(f"  URL:     http://localhost:{port}")
-    print(f"  Docs:    http://localhost:{port}/docs")
-    print(f"{'─'*50}\n")
+    print()
+    print("=" * 65)
+    print("  JOURNALI — AGENTE DE INVESTIGACIÓN CIENTÍFICA")
+    print("=" * 65)
+    print(f"  Agente : {NOMBRE_AGENTE}")
+    print(f"  Rol    : {ROL_AGENTE}")
+    print(f"  Dominio: {DOMINIO_AGENTE}")
+    print(f"  URL    : http://localhost:{port}")
+    print(f"  Docs   : http://localhost:{port}/docs")
+    print("=" * 65)
+    print()
 
-    uvicorn.run("main:app", host=host, port=port, reload=debug)
+    uvicorn.run(
+        "main:app",
+        host=host,
+        port=port,
+        reload=debug,
+    )

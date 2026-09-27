@@ -1,17 +1,15 @@
 """
-============================================================
-  routes/chat.py — Endpoint POST /chat
-  Seminario: Agentes de IA · Sesión 5
+routes/chat.py — Endpoints de conversación de JOURNALI
 
-  Maneja conversaciones con el agente.
-  Mantiene memoria por session_id.
-============================================================
+Expone el endpoint de conversación con memoria por sesión y
+permite limpiar el historial de una sesión específica.
 """
 
 from fastapi import APIRouter, HTTPException
+
 from models.schemas import ChatRequest, ChatResponse, ErrorResponse
 from core.agent_core import agente_service
-import os
+
 
 router = APIRouter()
 
@@ -19,26 +17,45 @@ router = APIRouter()
 @router.post(
     "/chat",
     response_model=ChatResponse,
-    summary="Conversar con el agente",
-    description="Envía un mensaje al agente y recibe su respuesta. Mantiene memoria por session_id.",
-    responses={500: {"model": ErrorResponse}},
+    summary="Conversar con JOURNALI",
+    description=(
+        "Envía una consulta a JOURNALI y recibe una respuesta "
+        "generada mediante el sistema de agentes. "
+        "La conversación mantiene memoria asociada al session_id."
+    ),
+    responses={
+        500: {"model": ErrorResponse},
+    },
 )
 async def chat(request: ChatRequest):
     """
-    POST /chat
+    Procesa una consulta del usuario mediante JOURNALI.
 
     Body:
-        mensaje:    El texto del usuario
-        session_id: Identificador de sesión (opcional, default: "default")
+        mensaje:
+            Consulta o instrucción del usuario.
+
+        session_id:
+            Identificador de la sesión conversacional.
+            Si no se proporciona, se utiliza el valor definido
+            por el esquema de solicitud.
 
     Returns:
-        ChatResponse con la respuesta del agente
+        ChatResponse con:
+
+        - respuesta: respuesta generada por JOURNALI.
+        - session_id: identificador de la sesión.
+        - modelo: modelo LLM utilizado.
+        - categoria: categoría determinada por el coordinador.
+        - fuentes: fuentes documentales recuperadas mediante RAG.
     """
+
     try:
         resultado = agente_service.chat(
             mensaje=request.mensaje,
             session_id=request.session_id,
         )
+
         return ChatResponse(
             respuesta=resultado["respuesta"],
             session_id=request.session_id,
@@ -46,19 +63,46 @@ async def chat(request: ChatRequest):
             categoria=resultado.get("categoria"),
             fuentes=resultado.get("fuentes", []),
         )
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error procesando la consulta en JOURNALI: {str(e)}",
+        )
 
 
-# ✏️ MODIFICA AQUÍ: agrega endpoints relacionados con chat
 @router.delete(
     "/chat/{session_id}",
-    summary="Limpiar sesión",
-    description="Elimina el historial de conversación de una sesión.",
+    summary="Limpiar sesión de JOURNALI",
+    description=(
+        "Elimina el historial conversacional asociado "
+        "a una sesión específica de JOURNALI."
+    ),
 )
 async def limpiar_sesion(session_id: str):
-    """DELETE /chat/{session_id} — limpia el historial"""
+    """
+    Elimina el historial de una sesión conversacional.
+
+    Args:
+        session_id:
+            Identificador de la sesión que se desea eliminar.
+
+    Returns:
+        Mensaje indicando si la sesión fue eliminada.
+    """
+
     eliminado = agente_service.limpiar_sesion(session_id)
+
     if eliminado:
-        return {"mensaje": f"Sesión '{session_id}' eliminada correctamente"}
-    return {"mensaje": f"Sesión '{session_id}' no encontrada"}
+        return {
+            "mensaje": (
+                f"Sesión '{session_id}' de JOURNALI "
+                "eliminada correctamente."
+            )
+        }
+
+    return {
+        "mensaje": (
+            f"Sesión '{session_id}' no encontrada."
+        )
+    }
